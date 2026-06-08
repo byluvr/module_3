@@ -41,10 +41,20 @@ enable_gost() {
 [[ -s "$SOURCE_CA" ]] ||
     die "$SOURCE_CA not found; run 01-hq-srv-issue-certificates.sh"
 
-log "Installing GOST support, Chromium GOST and CA tools"
+log "Installing GOST support and CA tools"
 apt-get update
-apt-get install -y openssl-gost-engine chromium-gost ca-certificates curl
+apt-get install -y openssl openssl-gost-engine ca-certificates curl
 enable_gost
+
+if rpm -q chromium >/dev/null 2>&1; then
+    log "Replacing the standard Chromium package with Chromium GOST"
+    apt-get remove -y chromium
+fi
+
+log "Installing Chromium GOST"
+apt-get install -y chromium-gost
+rpm -q chromium-gost >/dev/null 2>&1 ||
+    die "chromium-gost was not installed"
 
 log "Installing the AU-Team CA certificate"
 install -d -m 0755 /etc/pki/ca-trust/source/anchors
@@ -84,4 +94,5 @@ docker_code="$(
 log "CA trust configuration completed"
 printf '%s: HTTP %s authenticated\n' "$WEB_DOMAIN" "$web_authenticated_code"
 printf '%s: HTTP %s\n' "$DOCKER_DOMAIN" "$docker_code"
-printf 'Use Chromium GOST and restart it if it was open during CA installation.\n'
+printf 'Chromium GOST package: %s\n' "$(rpm -q chromium-gost)"
+printf 'Close all Chromium windows and start Chromium again.\n'

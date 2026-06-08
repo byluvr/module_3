@@ -19,6 +19,7 @@ AUTH_PASSWORD="${AUTH_PASSWORD:-P@ssw0rd}"
 CA_COMMON_NAME="${CA_COMMON_NAME:-AU-Team CA}"
 SOURCE_CA=/tmp/au-team-ca.crt
 TRUST_CA=/etc/pki/ca-trust/source/anchors/au-team-ca.crt
+GOST_REPOSITORY_FILE=/etc/apt/sources.list.d/gostcrypto.list
 
 log() {
     printf '[HQ-CLI trust] %s\n' "$*"
@@ -46,15 +47,41 @@ apt-get update
 apt-get install -y openssl openssl-gost-engine ca-certificates curl
 enable_gost
 
+log "Enabling the official ALT p10 gostcrypto repository"
+install -d -m 0755 /etc/apt/sources.list.d
+cat > "$GOST_REPOSITORY_FILE" <<'EOF'
+rpm [p10] http://ftp.altlinux.org p10/branch/x86_64 gostcrypto
+EOF
+chmod 0644 "$GOST_REPOSITORY_FILE"
+apt-get update
+
+chromium_gost_version="$(
+    apt-cache show chromium-gost 2>/dev/null |
+        awk '
+            $1 == "Package:" {
+                is_gost = ($2 == "chromium-gost")
+            }
+            is_gost && $1 == "Version:" {
+                print $2
+                exit
+            }
+        '
+)"
+[[ -n "$chromium_gost_version" ]] ||
+    die "the real chromium-gost package was not found in the gostcrypto repository"
+
 if rpm -q chromium >/dev/null 2>&1; then
     log "Replacing the standard Chromium package with Chromium GOST"
     apt-get remove -y chromium
 fi
 
-log "Installing Chromium GOST"
-apt-get install -y chromium-gost
+log "Installing Chromium GOST $chromium_gost_version"
+apt-get install -y "chromium-gost=$chromium_gost_version"
 rpm -q chromium-gost >/dev/null 2>&1 ||
-    die "chromium-gost was not installed"
+    die "chromium-gost was not installed; check apt-conf-branch-gostcrypto and repository access"
+if rpm -q chromium >/dev/null 2>&1; then
+    die "the standard chromium package was installed instead of chromium-gost"
+fi
 
 log "Installing the AU-Team CA certificate"
 install -d -m 0755 /etc/pki/ca-trust/source/anchors

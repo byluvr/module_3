@@ -15,6 +15,9 @@ chmod +x 01-hq-srv-rsyslog-server.sh
 ./01-hq-srv-rsyslog-server.sh
 ```
 
+Скрипт использует уже установленный `crontab`. Отдельно устанавливать
+пакет `cronie` на ALT Linux не требуется.
+
 ## 2. BR-SRV
 
 ```bash

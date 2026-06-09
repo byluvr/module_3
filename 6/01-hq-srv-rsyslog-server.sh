@@ -56,9 +56,16 @@ die() {
 [[ "$ROTATE_MINUTE" =~ ^([0-9]|[1-5][0-9])$ ]] ||
     die "ROTATE_MINUTE must be from 0 to 59"
 
-log "Installing rsyslog, logrotate and cron"
+log "Installing rsyslog and logrotate"
 apt-get update
-apt-get install -y rsyslog logrotate cronie
+apt-get install -y rsyslog logrotate
+
+if ! command -v crontab >/dev/null 2>&1; then
+    log "crontab is missing; trying ALT Linux cron packages"
+    apt-get install -y crontabs ||
+        apt-get install -y vixie-cron ||
+        die "cron is not installed and no supported cron package was found"
+fi
 
 log "Creating the remote log root"
 install -d -m 0750 "$LOG_ROOT"
@@ -131,7 +138,7 @@ elif systemctl list-unit-files --type=service |
     grep -q '^cron\.service'; then
     systemctl enable --now cron
 else
-    die "cron service was not found after installing cronie"
+    die "cron service was not found"
 fi
 systemctl restart rsyslog
 

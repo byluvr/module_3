@@ -56,7 +56,7 @@ validate_name() {
 
 for variable_name in \
     HQ_WAN_IP BR_WAN_IP HQ_TUNNEL_IP BR_TUNNEL_IP \
-    OSPF_NETWORK OSPF_WILDCARD; do
+    OSPF_NETWORK OSPF_AREA; do
     validate_ipv4 "$variable_name" "${!variable_name}"
 done
 
@@ -78,7 +78,6 @@ done
 [[ "$CONFIGURE_OSPF" == yes || "$CONFIGURE_OSPF" == no ]] ||
     die "CONFIGURE_OSPF must be yes or no"
 [[ "$OSPF_PROCESS" =~ ^[0-9]+$ ]] || die "OSPF_PROCESS must be numeric"
-[[ "$OSPF_AREA" =~ ^[0-9]+$ ]] || die "OSPF_AREA must be numeric"
 
 write_config() {
     local output_file="$1"
@@ -113,6 +112,7 @@ filter-map ipv4 $FILTER_MAP 5
  match gre host $local_wan host $remote_wan
  set crypto-map $CRYPTO_MAP peer $remote_wan
 exit
+no filter-map ipv4 $FILTER_MAP 10
 filter-map ipv4 $FILTER_MAP 10
  match udp host $remote_wan eq 4500 host $local_wan eq 4500
  set crypto-map $CRYPTO_MAP peer $remote_wan

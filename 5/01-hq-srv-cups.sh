@@ -68,9 +68,15 @@ fi
 
 log "Publishing $SERVER_QUEUE"
 lpadmin -p "$SERVER_QUEUE" -E -o printer-is-shared=true
-cupsenable "$SERVER_QUEUE"
-accept "$SERVER_QUEUE"
 systemctl restart cups
+
+queue_status="$(lpstat -p "$SERVER_QUEUE" 2>&1)" ||
+    die "printer queue $SERVER_QUEUE is unavailable: $queue_status"
+printf '%s\n' "$queue_status"
+
+lpstat -a "$SERVER_QUEUE" |
+    grep -F "$SERVER_QUEUE accepting requests" >/dev/null ||
+    die "printer queue $SERVER_QUEUE is not accepting jobs"
 
 lpstat -t
 

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/00-clean-common.sh"
+
+prepare_cleanup HQ-SRV
+
+log "Preserving CA files, remote logs, monitoring data and generated PDF files"
+log "Preserving /raid/nfs/Print.pdf"
+
+finish_cleanup

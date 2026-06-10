@@ -16,8 +16,8 @@ MANAGED_CLIENT_CONFIG=/etc/rsyslog.d/30-au-team-forward-warning.conf
 # shellcheck disable=SC1090
 source "$ENV_FILE"
 
-LOG_SERVER_IP="${LOG_SERVER_IP:-192.168.1.10}"
-LOG_SERVER_PORT="${LOG_SERVER_PORT:-514}"
+LOG_SERVER_IP="${LOG_SERVER_IP:?LOG_SERVER_IP is required in $ENV_FILE}"
+LOG_SERVER_PORT="${LOG_SERVER_PORT:?LOG_SERVER_PORT is required in $ENV_FILE}"
 LOG_ROOT="${LOG_ROOT:-/opt}"
 LOG_FILE_NAME="${LOG_FILE_NAME:-messages.log}"
 ROTATE_SIZE="${ROTATE_SIZE:-10M}"

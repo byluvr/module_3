@@ -64,71 +64,7 @@ prepare_cleanup() {
         fi
     fi
 
-    log "Removing temporary automation artifacts only"
-}
-
-remove_temp_file() {
-    local path="$1"
-
-    case "$path" in
-        /tmp/au-team-ca.crt | /tmp/hq-pdf-test.txt)
-            ;;
-        *)
-            die "refusing to remove unexpected temporary file: $path"
-            ;;
-    esac
-
-    if [[ -f "$path" || -L "$path" ]]; then
-        log "Removing $path"
-        rm -f -- "$path"
-    else
-        log "Already absent: $path"
-    fi
-}
-
-remove_backup_dir() {
-    local path="$1"
-
-    case "$path" in
-        /root/module_3_task_*_backups)
-            ;;
-        *)
-            die "refusing to remove unexpected backup directory: $path"
-            ;;
-    esac
-
-    if [[ -d "$path" || -L "$path" ]]; then
-        log "Removing $path"
-        rm -rf -- "$path"
-    else
-        log "Already absent: $path"
-    fi
-}
-
-remove_isp_transfer_file() {
-    local path="$1"
-    local parent
-    local name
-
-    parent="$(dirname -- "$path")"
-    name="$(basename -- "$path")"
-
-    [[ "$parent" == /home/* && "$parent" != /home/ ]] ||
-        die "unexpected certificate transfer directory: $parent"
-    case "$name" in
-        web.crt | web.key | au-team-ca.crt)
-            ;;
-        *)
-            die "unexpected certificate transfer file: $name"
-            ;;
-    esac
-
-    if [[ -f "$path" || -L "$path" ]]; then
-        log "Removing transferred copy $path"
-        rm -f -- "$path"
-    else
-        log "Already absent: $path"
-    fi
+    log "Preparing project cleanup"
 }
 
 unmount_import_iso() {

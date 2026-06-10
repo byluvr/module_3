@@ -28,8 +28,4 @@ Prometheus собирает и хранит метрики, Node Exporter пре
 Dashboard визуально отображает загрузку CPU, занятую оперативную память и
 занятое место основного накопителя.
 
-Для разрешения имени в `/etc/dnsmasq.conf` HQ-SRV добавлена запись:
-
-```text
-address=/mon.au-team.irpo/192.168.1.10
-```
+Имя `mon.au-team.irpo` разрешается Samba DNS на BR-SRV в адрес `192.168.1.10`.

@@ -13,7 +13,7 @@ CONTAINER_NAME=node-exporter-br
 # shellcheck disable=SC1090
 source "$ENV_FILE"
 
-NODE_EXPORTER_PORT="${NODE_EXPORTER_PORT:-9100}"
+NODE_EXPORTER_PORT="${NODE_EXPORTER_PORT:?NODE_EXPORTER_PORT is required in $ENV_FILE}"
 NODE_EXPORTER_IMAGE="${NODE_EXPORTER_IMAGE:-quay.io/prometheus/node-exporter:latest}"
 
 log() {

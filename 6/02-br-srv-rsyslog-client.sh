@@ -13,8 +13,8 @@ RSYSLOG_CONFIG=/etc/rsyslog.d/30-au-team-forward-warning.conf
 # shellcheck disable=SC1090
 source "$ENV_FILE"
 
-LOG_SERVER_IP="${LOG_SERVER_IP:-192.168.1.10}"
-LOG_SERVER_PORT="${LOG_SERVER_PORT:-514}"
+LOG_SERVER_IP="${LOG_SERVER_IP:?LOG_SERVER_IP is required in $ENV_FILE}"
+LOG_SERVER_PORT="${LOG_SERVER_PORT:?LOG_SERVER_PORT is required in $ENV_FILE}"
 LOG_PROTOCOL="${LOG_PROTOCOL:-tcp}"
 
 log() {

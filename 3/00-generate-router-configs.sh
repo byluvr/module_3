@@ -14,12 +14,12 @@ else
     exit 1
 fi
 
-HQ_WAN_IP="${HQ_WAN_IP:-172.16.4.4}"
-BR_WAN_IP="${BR_WAN_IP:-172.16.5.5}"
-HQ_WAN_INTERFACE="${HQ_WAN_INTERFACE:-int0}"
-BR_WAN_INTERFACE="${BR_WAN_INTERFACE:-int0}"
-HQ_TUNNEL_INTERFACE="${HQ_TUNNEL_INTERFACE:-tunnel.0}"
-BR_TUNNEL_INTERFACE="${BR_TUNNEL_INTERFACE:-tunnel.0}"
+HQ_WAN_IP="${HQ_WAN_IP:?HQ_WAN_IP is required in $ENV_FILE}"
+BR_WAN_IP="${BR_WAN_IP:?BR_WAN_IP is required in $ENV_FILE}"
+HQ_WAN_INTERFACE="${HQ_WAN_INTERFACE:?HQ_WAN_INTERFACE is required in $ENV_FILE}"
+BR_WAN_INTERFACE="${BR_WAN_INTERFACE:?BR_WAN_INTERFACE is required in $ENV_FILE}"
+HQ_TUNNEL_INTERFACE="${HQ_TUNNEL_INTERFACE:?HQ_TUNNEL_INTERFACE is required in $ENV_FILE}"
+BR_TUNNEL_INTERFACE="${BR_TUNNEL_INTERFACE:?BR_TUNNEL_INTERFACE is required in $ENV_FILE}"
 IPSEC_PROFILE="${IPSEC_PROFILE:-VPN}"
 CRYPTO_MAP="${CRYPTO_MAP:-VPN-MAP}"
 FILTER_MAP="${FILTER_MAP:-VPN-FILTER}"
@@ -94,6 +94,7 @@ filter-map ipv4 $FILTER_MAP 5
 exit
 no filter-map ipv4 $FILTER_MAP 10
 filter-map ipv4 $FILTER_MAP 10
+ match udp host $remote_wan eq 500 host $local_wan eq 500
  match udp host $remote_wan eq 4500 host $local_wan eq 4500
  set crypto-map $CRYPTO_MAP peer $remote_wan
 exit
@@ -105,7 +106,7 @@ interface $wan_interface
  set filter-map in $FILTER_MAP 10
 exit
 interface $tunnel_interface
- set filter-map in $FILTER_MAP 10
+ no set filter-map in $FILTER_MAP 10
 exit
 EOF
 

@@ -14,7 +14,7 @@ fi
 
 SSH_USER="${SSH_USER:-sshuser}"
 SSH_PASSWORD="${SSH_PASSWORD:-P@ssw0rd}"
-ISP_SSH_PORT="${ISP_SSH_PORT:-22}"
+ISP_SSH_PORT="${ISP_SSH_PORT:?ISP_SSH_PORT is required in $ENV_FILE}"
 SSHD_CONFIG=/etc/openssh/sshd_config
 
 log() {
@@ -57,6 +57,7 @@ log "Starting SSH"
 ssh-keygen -A
 [[ -f "$SSHD_CONFIG" ]] || die "$SSHD_CONFIG was not found"
 temp_sshd_config="$(mktemp)"
+trap 'rm -f -- "${temp_sshd_config:-}"' EXIT
 awk '
     $0 == "# BEGIN MODULE_3_TASK_2" {
         in_managed_block = 1
@@ -84,6 +85,7 @@ EOF
 sshd -t -f "$temp_sshd_config"
 install -m 0600 "$temp_sshd_config" "$SSHD_CONFIG"
 rm -f -- "$temp_sshd_config"
+trap - EXIT
 systemctl enable --now sshd
 systemctl restart sshd
 systemctl is-active --quiet sshd || die "sshd is not running"

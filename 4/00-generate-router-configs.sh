@@ -14,16 +14,18 @@ else
     exit 1
 fi
 
-HQ_WAN_IP="${HQ_WAN_IP:-172.16.4.4}"
-BR_WAN_IP="${BR_WAN_IP:-172.16.5.5}"
-HQ_INTERNAL_NETWORKS="${HQ_INTERNAL_NETWORKS:-192.168.1.0/26 192.168.2.0/28}"
-BR_INTERNAL_NETWORKS="${BR_INTERNAL_NETWORKS:-192.168.3.0/27}"
-HQ_WAN_INTERFACE="${HQ_WAN_INTERFACE:-int0}"
-BR_WAN_INTERFACE="${BR_WAN_INTERFACE:-int0}"
+HQ_WAN_IP="${HQ_WAN_IP:?HQ_WAN_IP is required in $ENV_FILE}"
+BR_WAN_IP="${BR_WAN_IP:?BR_WAN_IP is required in $ENV_FILE}"
+HQ_INTERNAL_NETWORKS="${HQ_INTERNAL_NETWORKS:?HQ_INTERNAL_NETWORKS is required in $ENV_FILE}"
+BR_INTERNAL_NETWORKS="${BR_INTERNAL_NETWORKS:?BR_INTERNAL_NETWORKS is required in $ENV_FILE}"
+HQ_WAN_INTERFACE="${HQ_WAN_INTERFACE:?HQ_WAN_INTERFACE is required in $ENV_FILE}"
+BR_WAN_INTERFACE="${BR_WAN_INTERFACE:?BR_WAN_INTERFACE is required in $ENV_FILE}"
+HQ_TUNNEL_INTERFACE="${HQ_TUNNEL_INTERFACE:?HQ_TUNNEL_INTERFACE is required in $ENV_FILE}"
+BR_TUNNEL_INTERFACE="${BR_TUNNEL_INTERFACE:?BR_TUNNEL_INTERFACE is required in $ENV_FILE}"
 FIREWALL_MAP="${FIREWALL_MAP:-INTERNET_IN}"
 OLD_IPSEC_FILTER="${OLD_IPSEC_FILTER:-VPN-FILTER}"
 CRYPTO_MAP="${CRYPTO_MAP:-VPN-MAP}"
-ALLOWED_TCP_PORTS="${ALLOWED_TCP_PORTS:-22 53 80 443 8080 2026}"
+ALLOWED_TCP_PORTS="${ALLOWED_TCP_PORTS:?ALLOWED_TCP_PORTS is required in $ENV_FILE}"
 ALLOW_ICMP="${ALLOW_ICMP:-yes}"
 
 die() {
@@ -67,7 +69,8 @@ for value in $HQ_INTERNAL_NETWORKS $BR_INTERNAL_NETWORKS; do
 done
 
 for variable_name in \
-    HQ_WAN_INTERFACE BR_WAN_INTERFACE FIREWALL_MAP \
+    HQ_WAN_INTERFACE BR_WAN_INTERFACE \
+    HQ_TUNNEL_INTERFACE BR_TUNNEL_INTERFACE FIREWALL_MAP \
     OLD_IPSEC_FILTER CRYPTO_MAP; do
     validate_name "$variable_name" "${!variable_name}"
 done
@@ -102,7 +105,8 @@ write_config() {
     local local_wan="$2"
     local remote_wan="$3"
     local wan_interface="$4"
-    local internal_networks_string="$5"
+    local tunnel_interface="$5"
+    local internal_networks_string="$6"
     local -a internal_networks
     local port
 
@@ -118,6 +122,7 @@ filter-map ipv4 $FIREWALL_MAP 5
 exit
 no filter-map ipv4 $FIREWALL_MAP 10
 filter-map ipv4 $FIREWALL_MAP 10
+ match udp host $remote_wan eq 500 host $local_wan eq 500
  match udp host $remote_wan eq 4500 host $local_wan eq 4500
  set crypto-map $CRYPTO_MAP peer $remote_wan
 exit
@@ -186,6 +191,9 @@ EOF
  set filter-map in $FIREWALL_MAP 10
  no set filter-map in $OLD_IPSEC_FILTER 10
 exit
+interface $tunnel_interface
+ no set filter-map in $OLD_IPSEC_FILTER 10
+exit
 end
 write memory
 EOF
@@ -194,11 +202,13 @@ EOF
 write_config \
     "$HQ_CONFIG" \
     "$HQ_WAN_IP" "$BR_WAN_IP" \
-    "$HQ_WAN_INTERFACE" "$HQ_INTERNAL_NETWORKS"
+    "$HQ_WAN_INTERFACE" "$HQ_TUNNEL_INTERFACE" \
+    "$HQ_INTERNAL_NETWORKS"
 
 write_config \
     "$BR_CONFIG" \
     "$BR_WAN_IP" "$HQ_WAN_IP" \
-    "$BR_WAN_INTERFACE" "$BR_INTERNAL_NETWORKS"
+    "$BR_WAN_INTERFACE" "$BR_TUNNEL_INTERFACE" \
+    "$BR_INTERNAL_NETWORKS"
 
 printf 'Created:\n  %s\n  %s\n' "$HQ_CONFIG" "$BR_CONFIG"

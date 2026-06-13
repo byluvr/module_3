@@ -13,7 +13,7 @@ JAIL_CONFIG=/etc/fail2ban/jail.d/sshd.local
 # shellcheck disable=SC1090
 source "$ENV_FILE"
 
-SSH_PORT="${SSH_PORT:-2026}"
+SSH_PORT="${SSH_PORT:?SSH_PORT is required in $ENV_FILE}"
 MAX_RETRY="${MAX_RETRY:-3}"
 FIND_TIME="${FIND_TIME:-600}"
 BAN_TIME="${BAN_TIME:-60}"

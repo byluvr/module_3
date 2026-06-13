@@ -215,7 +215,7 @@ if {$target ni {hq br all}} {
     exit 2
 }
 
-set ssh_port [env_value config ROUTER_SSH_PORT 22]
+set ssh_port [env_value config ROUTER_SSH_PORT ""]
 set ssh_user [env_value config ROUTER_SSH_USER net_admin]
 set auth_mode [string tolower [env_value config ROUTER_SSH_AUTH password]]
 set ssh_password [env_value config ROUTER_SSH_PASSWORD ""]

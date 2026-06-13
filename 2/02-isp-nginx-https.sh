@@ -14,8 +14,8 @@ fi
 
 WEB_DOMAIN="${WEB_DOMAIN:-web.au-team.irpo}"
 DOCKER_DOMAIN="${DOCKER_DOMAIN:-docker.au-team.irpo}"
-WEB_UPSTREAM="${WEB_UPSTREAM:-172.16.1.2:8080}"
-DOCKER_UPSTREAM="${DOCKER_UPSTREAM:-172.16.2.2:8080}"
+WEB_UPSTREAM="${WEB_UPSTREAM:?WEB_UPSTREAM is required in $ENV_FILE}"
+DOCKER_UPSTREAM="${DOCKER_UPSTREAM:?DOCKER_UPSTREAM is required in $ENV_FILE}"
 SSH_USER="${SSH_USER:-sshuser}"
 AUTH_USER="${AUTH_USER:-WEB}"
 AUTH_PASSWORD="${AUTH_PASSWORD:-P@ssw0rd}"
@@ -27,7 +27,6 @@ NGINX_ENABLED_DIR=/etc/nginx/sites-enabled.d
 NGINX_CONFIG="$NGINX_AVAILABLE_DIR/default.conf"
 NGINX_LINK="$NGINX_ENABLED_DIR/default.conf"
 HTPASSWD_FILE=/etc/nginx/.htpasswd
-BACKUP_DIR=/root/module_3_task_2_backups
 
 log() {
     printf '[ISP HTTPS] %s\n' "$*"
@@ -36,14 +35,6 @@ log() {
 die() {
     printf 'ERROR: %s\n' "$*" >&2
     exit 1
-}
-
-backup_file() {
-    local file="$1"
-
-    [[ -e "$file" || -L "$file" ]] || return 0
-    install -d -m 0700 "$BACKUP_DIR"
-    cp -a -- "$file" "$BACKUP_DIR/$(basename "$file").$(date +%Y%m%d%H%M%S)"
 }
 
 [[ $EUID -eq 0 ]] || die "run this script as root"
@@ -65,6 +56,10 @@ install -d -m 0750 "$SSL_DIR"
 install -m 0644 "$SOURCE_DIR/web.crt" "$SSL_DIR/web.crt"
 install -m 0600 "$SOURCE_DIR/web.key" "$SSL_DIR/web.key"
 install -m 0644 "$SOURCE_DIR/au-team-ca.crt" "$SSL_DIR/au-team-ca.crt"
+rm -f -- \
+    "$SOURCE_DIR/web.crt" \
+    "$SOURCE_DIR/web.key" \
+    "$SOURCE_DIR/au-team-ca.crt"
 
 openssl verify -CAfile "$SSL_DIR/au-team-ca.crt" "$SSL_DIR/web.crt"
 openssl x509 -in "$SSL_DIR/web.crt" -noout -text |
@@ -84,6 +79,7 @@ fi
 log "Writing the HTTPS reverse proxy configuration"
 install -d -m 0755 "$NGINX_AVAILABLE_DIR" "$NGINX_ENABLED_DIR"
 temp_config="$(mktemp)"
+trap 'rm -f -- "${temp_config:-}"' EXIT
 cat > "$temp_config" <<EOF
 # Managed by module_3/2/02-isp-nginx-https.sh
 server {
@@ -139,13 +135,12 @@ server {
 EOF
 
 if [[ ! -f "$NGINX_CONFIG" ]] || ! cmp -s "$temp_config" "$NGINX_CONFIG"; then
-    backup_file "$NGINX_CONFIG"
     install -m 0644 "$temp_config" "$NGINX_CONFIG"
 fi
 rm -f -- "$temp_config"
+trap - EXIT
 
 if [[ -e "$NGINX_LINK" && ! -L "$NGINX_LINK" ]]; then
-    backup_file "$NGINX_LINK"
     rm -f -- "$NGINX_LINK"
 fi
 ln -sfn ../sites-available.d/default.conf "$NGINX_LINK"

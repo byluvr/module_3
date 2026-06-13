@@ -40,6 +40,7 @@ apt-get install -y openssl ca-certificates curl
 log "Installing the AU-Team CA certificate"
 install -d -m 0755 /etc/pki/ca-trust/source/anchors
 install -m 0644 "$SOURCE_CA" "$TRUST_CA"
+rm -f -- "$SOURCE_CA"
 update-ca-trust
 
 openssl verify -CAfile "$TRUST_CA" "$TRUST_CA"

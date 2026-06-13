@@ -52,6 +52,7 @@ fi
 
 log "Adding the ISO mount to /etc/fstab"
 temp_fstab="$(mktemp)"
+trap 'rm -f -- "${temp_fstab:-}"' EXIT
 awk -v device="$ISO_DEVICE" -v mount_point="$ISO_MOUNT" '
     /^[[:space:]]*#/ || NF == 0 {
         print
@@ -66,6 +67,7 @@ printf '%s %s iso9660 loop,ro,auto 0 0\n' \
     "$ISO_DEVICE" "$ISO_MOUNT" >> "$temp_fstab"
 install -m 0644 "$temp_fstab" "$FSTAB"
 rm -f -- "$temp_fstab"
+trap - EXIT
 
 log "Importing users from $CSV_FILE"
 imported=0

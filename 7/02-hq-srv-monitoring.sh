@@ -7,7 +7,6 @@ COMPOSE_FILE="$SCRIPT_DIR/compose.yaml"
 PROMETHEUS_TEMPLATE="$SCRIPT_DIR/prometheus.yml.template"
 GENERATED_DIR="$SCRIPT_DIR/generated"
 PROMETHEUS_CONFIG="$GENERATED_DIR/prometheus.yml"
-DNSMASQ_CONFIG=/etc/dnsmasq.conf
 
 [[ -f "$ENV_FILE" ]] || {
     echo "ERROR: $ENV_FILE not found" >&2
@@ -18,11 +17,11 @@ DNSMASQ_CONFIG=/etc/dnsmasq.conf
 source "$ENV_FILE"
 
 MON_DOMAIN="${MON_DOMAIN:-mon.au-team.irpo}"
-HQ_SRV_IP="${HQ_SRV_IP:-192.168.1.10}"
-BR_SRV_IP="${BR_SRV_IP:-192.168.3.10}"
-GRAFANA_PORT="${GRAFANA_PORT:-3000}"
-PROMETHEUS_PORT="${PROMETHEUS_PORT:-9090}"
-NODE_EXPORTER_PORT="${NODE_EXPORTER_PORT:-9100}"
+HQ_SRV_IP="${HQ_SRV_IP:?HQ_SRV_IP is required in $ENV_FILE}"
+BR_SRV_IP="${BR_SRV_IP:?BR_SRV_IP is required in $ENV_FILE}"
+GRAFANA_PORT="${GRAFANA_PORT:?GRAFANA_PORT is required in $ENV_FILE}"
+PROMETHEUS_PORT="${PROMETHEUS_PORT:?PROMETHEUS_PORT is required in $ENV_FILE}"
+NODE_EXPORTER_PORT="${NODE_EXPORTER_PORT:?NODE_EXPORTER_PORT is required in $ENV_FILE}"
 GRAFANA_ADMIN_USER="${GRAFANA_ADMIN_USER:-admin}"
 GRAFANA_ADMIN_PASSWORD="${GRAFANA_ADMIN_PASSWORD:-P@ssw0rd}"
 
@@ -52,25 +51,6 @@ validate_port() {
         die "$name must be from 1 to 65535"
 }
 
-update_dnsmasq_record() {
-    local temp_file
-
-    [[ -f "$DNSMASQ_CONFIG" ]] ||
-        touch "$DNSMASQ_CONFIG"
-
-    temp_file="$(mktemp)"
-
-    awk -v domain="$MON_DOMAIN" '
-        index($0, "address=/" domain "/") != 1 {
-            print
-        }
-    ' "$DNSMASQ_CONFIG" > "$temp_file"
-
-    printf '\naddress=/%s/%s\n' "$MON_DOMAIN" "$HQ_SRV_IP" >> "$temp_file"
-    install -m 0644 "$temp_file" "$DNSMASQ_CONFIG"
-    rm -f "$temp_file"
-}
-
 [[ $EUID -eq 0 ]] || die "run this script as root"
 [[ -f "$COMPOSE_FILE" ]] || die "$COMPOSE_FILE not found"
 [[ -f "$PROMETHEUS_TEMPLATE" ]] || die "$PROMETHEUS_TEMPLATE not found"
@@ -84,13 +64,11 @@ validate_port NODE_EXPORTER_PORT "$NODE_EXPORTER_PORT"
 [[ -n "$GRAFANA_ADMIN_USER" && -n "$GRAFANA_ADMIN_PASSWORD" ]] ||
     die "Grafana credentials must not be empty"
 
-log "Installing Docker, Compose, dnsmasq and DNS tools"
+log "Installing Docker and Compose"
 apt-get update
 apt-get install -y \
     docker-engine \
     docker-compose-v2 \
-    dnsmasq \
-    bind-utils \
     curl
 
 systemctl enable --now docker.service
@@ -104,19 +82,6 @@ sed \
     -e "s/__BR_SRV_IP__/${BR_SRV_IP}/g" \
     -e "s/__NODE_EXPORTER_PORT__/${NODE_EXPORTER_PORT}/g" \
     "$PROMETHEUS_TEMPLATE" > "$PROMETHEUS_CONFIG"
-
-log "Adding $MON_DOMAIN to $DNSMASQ_CONFIG"
-update_dnsmasq_record
-dnsmasq --test
-systemctl enable --now dnsmasq
-systemctl restart dnsmasq
-
-resolved_ip="$(
-    dig +short A "$MON_DOMAIN" @127.0.0.1 |
-        tail -n 1
-)"
-[[ "$resolved_ip" == "$HQ_SRV_IP" ]] ||
-    die "$MON_DOMAIN resolves to ${resolved_ip:-nothing}, expected $HQ_SRV_IP"
 
 log "Validating Docker Compose"
 docker compose \

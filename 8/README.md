@@ -1,32 +1,15 @@
-# Модуль 3, задание 8
+# Инвентаризация Ansible
 
-На BR-SRV должен быть выполнен модуль 2, задание 5. Команда ниже должна
-возвращать `pong` для HQ-SRV и HQ-CLI:
-
-```bash
-cd /etc/ansible
-ansible -m ping HQ-SRV:HQ-CLI
-```
-
-Запуск инвентаризации:
+Запускается на BR-SRV после выполнения `module_2/5`.
 
 ```bash
-chmod +x 01-br-srv-inventory.sh
+chmod +x ./01-br-srv-inventory.sh
 ./01-br-srv-inventory.sh
 ```
 
-Скрипт создаёт:
-
-```text
-/etc/ansible/inventory.yml
-/etc/ansible/PC-INFO/<hostname>.yml
-```
-
-Проверка:
+## Проверка
 
 ```bash
 ls -la /etc/ansible/PC-INFO
 cat /etc/ansible/PC-INFO/*.yml
 ```
-
-Каждый отчёт содержит имя компьютера и его основной IPv4-адрес.

@@ -122,9 +122,13 @@ filter-map ipv4 $FIREWALL_MAP 5
 exit
 no filter-map ipv4 $FIREWALL_MAP 10
 filter-map ipv4 $FIREWALL_MAP 10
- match udp host $remote_wan eq 500 host $local_wan eq 500
  match udp host $remote_wan eq 4500 host $local_wan eq 4500
  set crypto-map $CRYPTO_MAP peer $remote_wan
+exit
+no filter-map ipv4 $FIREWALL_MAP 15
+filter-map ipv4 $FIREWALL_MAP 15
+ match udp host $remote_wan eq 500 host $local_wan eq 500
+ set accept
 exit
 no filter-map ipv4 $FIREWALL_MAP 20
 filter-map ipv4 $FIREWALL_MAP 20
@@ -189,10 +193,15 @@ EOF
     cat >> "$output_file" <<EOF
  set filter-map in $FIREWALL_MAP 5
  set filter-map in $FIREWALL_MAP 10
+ set filter-map in $FIREWALL_MAP 15
+ no set filter-map in $OLD_IPSEC_FILTER 5
  no set filter-map in $OLD_IPSEC_FILTER 10
+ no set filter-map in $OLD_IPSEC_FILTER 15
 exit
 interface $tunnel_interface
+ no set filter-map in $OLD_IPSEC_FILTER 5
  no set filter-map in $OLD_IPSEC_FILTER 10
+ no set filter-map in $OLD_IPSEC_FILTER 15
 exit
 end
 write memory

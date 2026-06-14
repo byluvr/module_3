@@ -94,7 +94,6 @@ filter-map ipv4 $FILTER_MAP 5
 exit
 no filter-map ipv4 $FILTER_MAP 10
 filter-map ipv4 $FILTER_MAP 10
- match udp host $remote_wan eq 500 host $local_wan eq 500
  match udp host $remote_wan eq 4500 host $local_wan eq 4500
  set crypto-map $CRYPTO_MAP peer $remote_wan
 exit
@@ -103,10 +102,14 @@ filter-map ipv4 $FILTER_MAP 15
  set accept
 exit
 interface $wan_interface
+ set filter-map in $FILTER_MAP 5
  set filter-map in $FILTER_MAP 10
+ set filter-map in $FILTER_MAP 15
 exit
 interface $tunnel_interface
+ no set filter-map in $FILTER_MAP 5
  no set filter-map in $FILTER_MAP 10
+ no set filter-map in $FILTER_MAP 15
 exit
 EOF
 

@@ -18,8 +18,6 @@ HQ_WAN_IP="${HQ_WAN_IP:?HQ_WAN_IP is required in $ENV_FILE}"
 BR_WAN_IP="${BR_WAN_IP:?BR_WAN_IP is required in $ENV_FILE}"
 HQ_WAN_INTERFACE="${HQ_WAN_INTERFACE:?HQ_WAN_INTERFACE is required in $ENV_FILE}"
 BR_WAN_INTERFACE="${BR_WAN_INTERFACE:?BR_WAN_INTERFACE is required in $ENV_FILE}"
-HQ_TUNNEL_INTERFACE="${HQ_TUNNEL_INTERFACE:?HQ_TUNNEL_INTERFACE is required in $ENV_FILE}"
-BR_TUNNEL_INTERFACE="${BR_TUNNEL_INTERFACE:?BR_TUNNEL_INTERFACE is required in $ENV_FILE}"
 IPSEC_PROFILE="${IPSEC_PROFILE:-VPN}"
 CRYPTO_MAP="${CRYPTO_MAP:-VPN-MAP}"
 FILTER_MAP="${FILTER_MAP:-VPN-FILTER}"
@@ -52,7 +50,6 @@ done
 
 for variable_name in \
     HQ_WAN_INTERFACE BR_WAN_INTERFACE \
-    HQ_TUNNEL_INTERFACE BR_TUNNEL_INTERFACE \
     IPSEC_PROFILE CRYPTO_MAP FILTER_MAP; do
     validate_name "$variable_name" "${!variable_name}"
 done
@@ -65,7 +62,6 @@ write_config() {
     local local_wan="$2"
     local remote_wan="$3"
     local wan_interface="$4"
-    local tunnel_interface="$5"
 
     cat > "$output_file" <<EOF
 enable
@@ -92,9 +88,7 @@ filter-map ipv4 $FILTER_MAP 5
  match gre host $local_wan host $remote_wan
  set crypto-map $CRYPTO_MAP peer $remote_wan
 exit
-no filter-map ipv4 $FILTER_MAP 10
 filter-map ipv4 $FILTER_MAP 10
- match udp host $remote_wan eq 500 host $local_wan eq 500
  match udp host $remote_wan eq 4500 host $local_wan eq 4500
  set crypto-map $CRYPTO_MAP peer $remote_wan
 exit
@@ -103,10 +97,9 @@ filter-map ipv4 $FILTER_MAP 15
  set accept
 exit
 interface $wan_interface
+ set filter-map in $FILTER_MAP 5
  set filter-map in $FILTER_MAP 10
-exit
-interface $tunnel_interface
- no set filter-map in $FILTER_MAP 10
+ set filter-map in $FILTER_MAP 15
 exit
 EOF
 
@@ -119,11 +112,11 @@ EOF
 write_config \
     "$HQ_CONFIG" \
     "$HQ_WAN_IP" "$BR_WAN_IP" \
-    "$HQ_WAN_INTERFACE" "$HQ_TUNNEL_INTERFACE"
+    "$HQ_WAN_INTERFACE"
 
 write_config \
     "$BR_CONFIG" \
     "$BR_WAN_IP" "$HQ_WAN_IP" \
-    "$BR_WAN_INTERFACE" "$BR_TUNNEL_INTERFACE"
+    "$BR_WAN_INTERFACE"
 
 printf 'Created:\n  %s\n  %s\n' "$HQ_CONFIG" "$BR_CONFIG"

@@ -1,6 +1,6 @@
 # Межсетевой экран EcoRouter
 
-На HQ-CLI проверьте WAN-адреса, внутренние сети, интерфейсы и разрешённые порты в `.env`.
+Выполняется на HQ-CLI после настройки VPN из `module_3/3`.
 
 ```bash
 apt-get update
@@ -10,13 +10,30 @@ chmod +x ./*.sh ./*.exp
 ./01-apply-router-config.exp all
 ```
 
-## Проверка с ISP
+Фильтр назначается только на WAN-интерфейс `int0`. На `tunnel.0` правила не назначаются.
+
+Проверка VPN и OSPF:
+
+```text
+show crypto-ipsec ike security-associations
+show ip ospf neighbor
+show ip route ospf
+```
+
+Проверка доступа к репозиторию с HQ-SRV, HQ-CLI и BR-SRV:
 
 ```bash
-nmap -Pn -p 22,80,443,8080,2026,5555 172.16.1.4
-nmap -Pn -p 22,80,443,8080,2026,5555 172.16.2.5
+curl -I http://ftp.altlinux.org/
+apt-get update
+```
+
+Проверка с ISP:
+
+```bash
+nmap -Pn -p 22,8080,2026,5555 172.16.1.4
+nmap -Pn -p 22,8080,2026,5555 172.16.2.5
 nmap -Pn -sU -p 53,123,9999 172.16.1.4
 nmap -Pn -sU -p 53,123,9999 172.16.2.5
 ```
 
-Разрешённый порт может быть `open` или `closed`. Не разрешённый порт должен быть `filtered`.
+Порт `5555/tcp` и `9999/udp` должны быть `filtered`.
